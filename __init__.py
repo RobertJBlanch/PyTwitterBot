@@ -1,5 +1,4 @@
 import datetime
-import logging
 import tweepy
 import os
 import time
@@ -9,12 +8,19 @@ import random
 from tweepy import api
 
 maxTweets = 3200
+searchTweetAmount = 500
+topTweetsAmount = 250
 
+
+# Fill in these from Twitter developer account
 accName = None
 APIKey = None
 APIKeySecret = None
 AccessToken = None
 AccessTokenSecret = None
+
+# Tag to search by. Example tag = '#love'
+tag = None
 
 # Authenticate to Twitter
 auth = tweepy.OAuthHandler(APIKey, APIKeySecret)
@@ -26,10 +32,10 @@ api = tweepy.API(auth, wait_on_rate_limit=True,
 
 def main():
 
-    logging.info("Processing 1st acc...")
-    process(accName, APIKey, APIKeySecret, AccessToken, AccessTokenSecret, "#writingcommunity")
+    print("Processing 1st acc...")
+    process(accName, APIKey, APIKeySecret, AccessToken, AccessTokenSecret, tag)
 
-    logging.info("Processed 1st acc")
+    print("Processed 1st acc")
 
 def process(name, key, keysecret, token, tokensecret, tag):
 
@@ -44,44 +50,46 @@ def process(name, key, keysecret, token, tokensecret, tag):
     searchTweets(api, tag)
 
 
+#Searches tweet by tag
 def searchTweets(api, tag):
 
     sleep(10)
 
-    logging.info("Searching by tag: " + tag)
-    tweetsIterator = tweepy.Cursor(api.search, q=tag, lang="en").items(500)
+    print("Searching by tag: " + tag)
+    tweetsIterator = tweepy.Cursor(api.search, q=tag, lang="en").items(searchTweetAmount)
 
     tweets = list(tweetsIterator)
 
     tweets.sort(key=lambda x: x.favorite_count, reverse=True)
 
-    del tweets[250:len(tweets)]
+    del tweets[topTweetsAmount:len(tweets)]
 
     retweetLikeGivenTweets(api, tweets)
 
+# Randomly Retweet and like a tweet given a list of tweets
 def retweetLikeGivenTweets(api, tweets):
     
-    randIndex = random.randrange(0, 200)
+    randIndex = random.randrange(0, topTweetsAmount-1)
 
-    logging.info(len(tweets))
+    print(len(tweets))
 
     tweet = tweets[randIndex]
 
     favorited = api.get_status(tweet.id).favorited
 
     if favorited:
-        logging.info("Tweet already favorited, entering recursion....")
+        print("Tweet already favorited, entering recursion....")
         retweetLikeGivenTweets(api, tweets)
 
     else:
         api.create_favorite(tweets[randIndex].id)
-        logging.info("Tweet favorited")
+        print("Tweet favorited")
 
         sleep(30)
 
-        logging.info("Attempting to retweet tweet...")
+        print("Attempting to retweet tweet...")
         api.retweet(tweets[randIndex].id)
-        logging.info("Retweeted by tag successful")
+        print("Retweeted by tag successful")
 
 
 # Retweets a tweet from target account
